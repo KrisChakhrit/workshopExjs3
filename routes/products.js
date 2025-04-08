@@ -6,9 +6,8 @@ var jwtAuth = require("../middleware/token.middleware");
 var multer = require("multer");
 var fs = require("fs");
 var path = require("path");
-var orderSchema = require('../models/order.model')
+var orderSchema = require("../models/order.model");
 const { error } = require("console");
-
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -134,17 +133,19 @@ router.delete("/products/:id", [jwtAuth], async function (req, res, next) {
   const userId = getId(req.headers.authorization);
   let { id } = req.params;
   try {
-       await productSchema.findByIdAndDelete(id, { customer: userId });
+    await productSchema.findByIdAndDelete(id, { customer: userId });
     res.status(200).send({
       status: 200,
       message: "ลบข้อมูลเรียบร้อย",
       data: userId,
     });
-  } catch (error) { res.status(500).send({
-    status: 500,
-    message: "แก้ไขข้อมูลล้มเหลว",
-    error: error.message,
-  });}
+  } catch (error) {
+    res.status(500).send({
+      status: 500,
+      message: "แก้ไขข้อมูลล้มเหลว",
+      error: error.message,
+    });
+  }
 });
 
 router.get("/products/:id/orders", [jwtAuth], async function (req, res, next) {
@@ -167,7 +168,7 @@ router.get("/products/:id/orders", [jwtAuth], async function (req, res, next) {
 
 router.post("/products/:id/orders", [jwtAuth], async function (req, res, next) {
   const { id } = req.params;
-  const { ordernum } = req.body;
+  const { ordernum, name } = req.body;
 
   if (!ordernum || ordernum <= 0) {
     return res.status(400).json({
@@ -197,12 +198,15 @@ router.post("/products/:id/orders", [jwtAuth], async function (req, res, next) {
     if (product.productnum < ordernum + totalQuantity) {
       return res.status(400).json({
         status: 400,
-        message: `จำนวนสินค้าในสต๊อกไม่เพียงพอ เหลือเพียง ${product.productnum - totalQuantity} ชิ้น`,
+        message: `จำนวนสินค้าในสต๊อกไม่เพียงพอ เหลือเพียง ${
+          product.productnum - totalQuantity
+        } ชิ้น`,
       });
     }
 
     // สร้าง order ใหม่
     const order = new orderSchema({
+      name:name,
       productId: id,
       ordernum: ordernum,
     });
@@ -214,7 +218,6 @@ router.post("/products/:id/orders", [jwtAuth], async function (req, res, next) {
       message: "ทำการสั่งซื้อเรียบร้อยแล้ว",
       data: order,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
